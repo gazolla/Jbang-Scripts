@@ -51,9 +51,7 @@ public class ImageClassifier {
 
         // 4. Sessão e Processamento (Escopo Único para evitar erros de import)
         try {
-            var session = runner.sessionService()
-                    .createSession("classifier-app", "user-1")
-                    .blockingGet();
+            var session = runner.sessionService().createSession("classifier-app", "user-1").blockingGet();
             var key = session.sessionKey(); // Inferência de tipo mágica aqui
 
             System.out.println("🚀 Iniciando classificação em: " + inputDir.toAbsolutePath());
