@@ -10,14 +10,13 @@ import com.google.genai.types.Content;
 import com.google.genai.types.Part;
 import com.google.genai.types.Blob;
 
-import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class ImageClassifier {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         // 1. Validação de Argumentos e API Key
         if (args.length == 0) {
             System.err.println("❌ Uso: jbang ImageClassifier.java <caminho_da_pasta>");
