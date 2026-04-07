@@ -1,5 +1,0 @@
-{
-  "name": "WeatherClient.java",
-  "description": "Fetches current weather and forecast for a given city using pure Java HttpClient.",
-  "args": ["city"]
-}

@@ -1,5 +1,0 @@
-{
-  "name": "ISSLocation.java",
-  "description": "Fetches and prints the current geographical coordinates of the International Space Station (ISS) using the open-notify API.",
-  "args": []
-}
