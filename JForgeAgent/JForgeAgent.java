@@ -40,6 +40,8 @@ public class JForgeAgent implements Callable<Integer> {
 
     private static final Path TOOLS_DIR = Path.of("tools");
     private static final Path LOGS_DIR = Path.of("logs");
+    private static final Path ARTIFACTS_DIR = Path.of("artifacts");
+    private static final Path PRODUCTS_DIR = Path.of("products");
     
     private Path currentSessionLog;
     private final java.util.Deque<String> conversationMemory = new java.util.ArrayDeque<>();
@@ -62,6 +64,8 @@ public class JForgeAgent implements Callable<Integer> {
 
         Files.createDirectories(TOOLS_DIR);
         Files.createDirectories(LOGS_DIR);
+        Files.createDirectories(ARTIFACTS_DIR);
+        Files.createDirectories(PRODUCTS_DIR);
 
         initLogging();
         startChatMenu();
@@ -175,9 +179,11 @@ public class JForgeAgent implements Callable<Integer> {
             return;
         }
 
-        System.out.println(AUTO.string("@|bold,cyan Welcome to JForge V3.1 - MCP Metadata Tool Orchestrator.|@"));
+        System.out.println(AUTO.string("@|bold,cyan Welcome to JForge V1.0 - Tool Orchestrator.|@"));
         System.out.println(AUTO.string("Available tools are cached in: @|yellow " + TOOLS_DIR.toAbsolutePath() + "|@"));
-        System.out.println(AUTO.string("Logs are recorded in: @|yellow " + LOGS_DIR.toAbsolutePath() + "|@\n"));
+        System.out.println(AUTO.string("Logs are recorded in: @|yellow " + LOGS_DIR.toAbsolutePath() + "|@"));
+        System.out.println(AUTO.string("Workspace [Products]: @|yellow " + PRODUCTS_DIR.toAbsolutePath() + "|@"));
+        System.out.println(AUTO.string("Workspace [Artifacts]: @|yellow " + ARTIFACTS_DIR.toAbsolutePath() + "|@\n"));
         
         var routerRunner = new InMemoryRunner(buildRouterAgent(), "router-app");
         var coderRunner = new InMemoryRunner(buildCoderAgent(), "coder-app");
@@ -222,7 +228,24 @@ public class JForgeAgent implements Callable<Integer> {
                     : "A FAILURE OCCURRED IN THE LAST EXECUTION WITH THE FOLLOWING TRACE. REQUIRED FIX: " + lastError;
             String historyList = conversationMemory.isEmpty() ? "No previous context." : String.join("\n", conversationMemory);
             
+            String workspaceTopology = String.format("""
+                Workspace Architecture (Absolute Paths):
+                - TOOLS: %s
+                - LOGS: %s
+                - ARTIFACTS: %s (Instruct tools to use this EXACT ABSOLUTE PATH for temporary data and extractions)
+                - PRODUCTS: %s (Instruct tools to save user-requested final files using this EXACT ABSOLUTE PATH)
+                
+                MANDATORY RULE: When creating tools that write files, you MUST feed them the literal absolute path strings above. Do not use relative paths like '/products'.
+                """, 
+                TOOLS_DIR.toAbsolutePath().toString().replace("\\", "/"), 
+                LOGS_DIR.toAbsolutePath().toString().replace("\\", "/"), 
+                ARTIFACTS_DIR.toAbsolutePath().toString().replace("\\", "/"), 
+                PRODUCTS_DIR.toAbsolutePath().toString().replace("\\", "/"));
+
             String statePrompt = String.format("""
+                [Workspace Topology]
+                %s
+
                 [System Clock]
                 %s
                 
@@ -239,7 +262,7 @@ public class JForgeAgent implements Callable<Integer> {
                 %s
                 Original User Request: %s
                 Decide next action: EXECUTE, CREATE, EDIT, SEARCH, or DELEGATE_CHAT.
-                """, clock, historyList, cacheList, ragContext.isEmpty() ? "No recent searches." : ragContext, fallbackText, userPrompt);
+                """, workspaceTopology, clock, historyList, cacheList, ragContext.isEmpty() ? "No recent searches." : ragContext, fallbackText, userPrompt);
 
             System.out.println(AUTO.string("@|bold,blue [ROUTER] Analyzing Intent and Metadata Schemas...|@"));
             String routerAction = invokeLlm(rRunner, rKey, statePrompt);
@@ -249,6 +272,9 @@ public class JForgeAgent implements Callable<Integer> {
                 System.out.println(AUTO.string("@|bold,yellow \uD83D\uDCAC [ASSISTANT] Generating intelligent response...|@"));
                 
                 String assistPrompt = "Original Request: " + userPrompt + "\n\n[Local System Clock]: " + clock;
+                if(!cacheList.equals("Empty")) {
+                    assistPrompt += "\n\n[System State - Available Cached Tools]:\n" + cacheList;
+                }
                 if(!ragContext.isEmpty()) {
                     assistPrompt += "\n\n[RAG Context for Factual Accuracy]:\n" + ragContext;
                 }
@@ -371,6 +397,7 @@ public class JForgeAgent implements Callable<Integer> {
         
         List<String> procArgs = new ArrayList<>();
         procArgs.add("jbang");
+        procArgs.add("-Dfile.encoding=UTF-8");
         procArgs.addAll(List.of(parts));
 
         Process process = new ProcessBuilder(procArgs)
@@ -378,7 +405,7 @@ public class JForgeAgent implements Callable<Integer> {
                 .redirectErrorStream(true)
                 .start();
                 
-        String executionOutput = new String(process.getInputStream().readAllBytes());
+        String executionOutput = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
         int exitCode = process.waitFor();
         
         System.out.println("----------------[ RESULT ]----------------");
