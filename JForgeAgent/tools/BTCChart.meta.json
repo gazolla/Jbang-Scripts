@@ -1,0 +1,5 @@
+{
+  "name": "BTCChart.java",
+  "description": "Fetches and displays an ASCII chart of BTC close prices for the last 10 days (or provided limit)",
+  "args": ["Optional: limit (default 10)"]
+}

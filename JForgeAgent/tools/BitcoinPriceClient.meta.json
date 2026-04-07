@@ -1,0 +1,5 @@
+{
+  "name": "BitcoinPriceClient.java",
+  "description": "Fetches the current Bitcoin (or other crypto) price quote using pure Java HttpClient.",
+  "args": ["symbol (optional, defaults to BTCUSDT)"]
+}
